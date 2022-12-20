@@ -1,0 +1,24 @@
+#!bin/bash
+# Default all to DROP
+# SSH Open
+
+echo -------------------------------
+echo Starting IPTABLES Configuration
+
+iptables --flush
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+iptables -P OUTPUT DROP
+
+echo Finished IPTABLES Configuration
+echo -------------------------------
+echo Making Configuration Persistent
+
+/sbin/iptables-save > /etc/iptables/rules
+
+echo Configuration is Persistent
+echo ---------------------------
+echo Script Completed
+echo :)
