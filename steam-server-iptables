@@ -1,0 +1,73 @@
+#!bin/bash
+# Default all to DROP
+# SSH Open
+
+echo -------------------------------
+echo Starting IPTABLES Configuration
+
+# Flush All
+iptables --flush
+
+# Loopback i/o
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A OUTPUT -o lo -j ACCEPT
+
+# SSH i/o
+iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 22 -j ACCEPT
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 22 -j ACCEPT
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+iptables -A OUTPUT -m state --state NEW -m tcp -p tcp --dport 22 -j ACCEPT
+iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A OUTPUT -m state --state NEW -m tcp -p tcp --dport 22 -j ACCEPT
+iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# Zomboid i/o
+iptables -A INPUT -p udp -m udp --dport 16261 -j ACCEPT
+iptables -A OUTPUT -p udp -m udp --sport 16261 -j ACCEPT
+iptables -A INPUT -p udp -m udp --dport 8766  -j ACCEPT
+iptables -A OUTPUT -p udp -m udp --sport 8766  -j ACCEPT
+
+# Mail, DNS 
+iptables -A OUTPUT -p tcp --dport 25 -j ACCEPT
+iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
+
+# Steam i/o
+
+iptables -A INPUT -p udp -m udp --dport 27015:27030 -j ACCEPT
+iptables -A OUTPUT -p udp -m udp --sport 27015:27030 -j ACCEPT
+iptables -A INPUT -p tcp -m tcp --dport 27015:27030 -j ACCEPT
+iptables -A OUTPUT -p tcp -m tcp --sport 27015:27030 -j ACCEPT
+iptables -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+iptables -A OUTPUT -p tcp -m tcp --sport 80 -j ACCEPT
+iptables -A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+iptables -A OUTPUT -p tcp -m tcp --sport 443 -j ACCEPT
+iptables -A INPUT -p udp -m udp --dport 27000:27100 -j ACCEPT
+iptables -A OUTPUT -p udp -m udp --sport 27000:27100 -j ACCEPT
+iptables -A INPUT -p udp -m udp --dport 27031:27036 -j ACCEPT
+iptables -A OUTPUT -p udp -m udp --sport 27031:27036 -j ACCEPT
+iptables -A INPUT -p udp -m udp --dport 4380 -j ACCEPT
+iptables -A OUTPUT -p udp -m udp --sport 4380 -j ACCEPT
+iptables -A INPUT -p udp -m udp --dport 3478 -j ACCEPT
+iptables -A OUTPUT -p udp -m udp --sport 3478 -j ACCEPT
+iptables -A INPUT -p udp -m udp --dport 4379:4380 -j ACCEPT
+iptables -A OUTPUT -p udp -m udp --sport 4379:4380 -j ACCEPT
+
+# All Others Blocked
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+iptables -P OUTPUT DROP
+
+echo Finished IPTABLES Configuration
+echo -------------------------------
+echo Making Configuration Persistent
+
+# Make Persistent
+iptables-save >/etc/iptables/rules.v4
+ip6tables-save >/etc/iptables/rules.v6
+
+echo Configuration is Persistent
+echo ---------------------------
+echo Script Completed
+echo ':)'
