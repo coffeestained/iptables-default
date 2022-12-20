@@ -5,9 +5,20 @@
 echo -------------------------------
 echo Starting IPTABLES Configuration
 
+# Flush All
 iptables --flush
-iptables -A OUTPUT -p tcp --sport 22 -j ACCEPT
-iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+
+# Loopback i/o
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A OUTPUT -o lo -j ACCEPT
+
+# SSH i/o
+iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 22 -j ACCEPT
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 22 -j OUTPUT
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j OUTPUT
+
+# All Others Blocked
 iptables -P INPUT DROP
 iptables -P FORWARD DROP
 iptables -P OUTPUT DROP
@@ -16,6 +27,7 @@ echo Finished IPTABLES Configuration
 echo -------------------------------
 echo Making Configuration Persistent
 
+# Make Persistent
 iptables-save >/etc/iptables/rules.v4
 ip6tables-save >/etc/iptables/rules.v6
 
