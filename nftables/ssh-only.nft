@@ -1,0 +1,39 @@
+#!/usr/sbin/nft -f
+# SSH-only host firewall, nftables (v4 + v6 in one inet table).
+# In:  loopback, established, ping, SSH (rate limited per source). Everything else dropped.
+# Out: open.
+#
+# Apply:   nft -f ssh-only.nft
+# Persist: cp ssh-only.nft /etc/nftables.conf && systemctl enable --now nftables
+
+define ssh_port = 22
+# To restrict sources, set these and swap the two commented rules below.
+# define allow4 = { 203.0.113.0/24 }
+# define allow6 = { 2001:db8::/32 }
+
+flush ruleset
+
+table inet filter {
+  # Per-source counters; entries expire a minute after the last hit.
+  set ssh4 { type ipv4_addr; flags dynamic; timeout 1m; }
+  set ssh6 { type ipv6_addr; flags dynamic; timeout 1m; }
+
+  chain input {
+    type filter hook input priority 0; policy drop;
+
+    iif lo accept
+    ct state established,related accept
+    ct state invalid drop
+    ip protocol icmp accept
+    meta l4proto ipv6-icmp accept          # neighbour discovery; never drop this
+
+    # >5 new SSH connections / minute from one address -> drop.
+    tcp dport $ssh_port ct state new add @ssh4 { ip saddr limit rate over 5/minute } drop
+    tcp dport $ssh_port ct state new add @ssh6 { ip6 saddr limit rate over 5/minute } drop
+    tcp dport $ssh_port ct state new accept
+    # tcp dport $ssh_port ip  saddr $allow4 ct state new accept
+    # tcp dport $ssh_port ip6 saddr $allow6 ct state new accept
+  }
+  chain forward { type filter hook forward priority 0; policy drop; }
+  chain output  { type filter hook output  priority 0; policy accept; }
+}
